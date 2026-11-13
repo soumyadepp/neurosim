@@ -22,6 +22,13 @@ export const EVIDENCE_FACTS = {
   empiricalMeanFc: 0.23,
   braakRho: 0.39,
   parkinsons: { r: 0.42, median: 0.07, year: 20 },
+  meg: {
+    bands: ['delta', 'theta', 'alpha', 'beta', 'gamma1', 'gamma2'],
+    r: [0.791, 0.895, 0.841, 0.795, 0.684, 0.683],
+    nullMean: [0.533, 0.546, 0.523, 0.559, 0.439, 0.412],
+    p: [0.0143, 0.002, 0.0037, 0.018, 0.0556, 0.0406],
+    spins: 10000,
+  },
   regions: 68,
   receptors: 19,
 } as const;

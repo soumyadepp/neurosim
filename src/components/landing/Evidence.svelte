@@ -4,6 +4,7 @@
   import Brain from '@lucide/svelte/icons/brain';
   import ExternalLink from '@lucide/svelte/icons/external-link';
   import Play from '@lucide/svelte/icons/play';
+  import { bandVerdict } from '../../lib/landing/bands';
   import { EVIDENCE_FACTS } from '../../lib/landing/facts';
   import { reveal } from '../../lib/landing/reveal';
   import { go } from '../../lib/router.svelte';
@@ -15,6 +16,13 @@
 
   const SCORE_VALUES = [F.modelR, F.connectomeR, F.braakRho, F.parkinsons.r];
   const scores = E.scores.map((s, i) => ({ ...s, value: SCORE_VALUES[i] }));
+  const M = E.meg;
+  const bands = F.meg.bands.map((id, i) => ({
+    ...M.bands[id],
+    score: F.meg.r[i],
+    chance: F.meg.nullMean[i],
+    verdict: bandVerdict(F.meg.p[i], F.meg.bands.length),
+  }));
   const stats = [
     { value: String(F.regions), label: E.stats.regions },
     { value: String(F.receptors), label: E.stats.receptors },
@@ -106,6 +114,34 @@
         </div>
         <p class="fine">{E.scoreNote}</p>
         <p class="fine">{E.parkinsonsCaveat}</p>
+        <div class="meg">
+          <p class="eyebrow">{M.eyebrow}</p>
+          <h3>{M.heading}</h3>
+          <p class="meg-intro">{M.intro}</p>
+          <ul class="bands">
+            {#each bands as b (b.name)}
+              <li class="band {b.verdict}">
+                <p class="band-name">{b.name}<span>{b.range}</span></p>
+                <div class="track" aria-hidden="true">
+                  <i class="bar" style:width="{b.score * 100}%"></i>
+                  <i class="tick" style:left="{b.chance * 100}%"></i>
+                </div>
+                <p class="band-score mono">{b.score.toFixed(2)}<span>{M.chance(b.chance.toFixed(2))}</span></p>
+                <p class="band-verdict">{M.verdicts[b.verdict]}</p>
+              </li>
+            {/each}
+          </ul>
+          <p class="meg-legend">
+            <span><i class="key-bar"></i>{M.legend.score}</span>
+            <span><i class="key-tick"></i>{M.legend.chance}</span>
+          </p>
+          <div class="callout warn">
+            <h3>{M.catchTitle}</h3>
+            <p>{M.catch}</p>
+          </div>
+          <p class="fine">{M.scope}</p>
+          <p class="fine">{M.method(F.meg.spins.toLocaleString('en'))}</p>
+        </div>
         <div class="callouts">
           <div class="callout">
             <h3>{E.humblingTitle}</h3>
@@ -245,6 +281,29 @@
   .score.warn .value { color: var(--st-serious-text); }
   .meaning { margin: 0; font-size: var(--fs-sm); line-height: 1.6; color: var(--muted); }
 
+  .meg { margin-top: 28px; padding: 26px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+  .meg > h3 { margin: 6px 0 10px; font-family: var(--display); font-size: 24px; font-weight: 500; letter-spacing: -.01em; line-height: 1.2; }
+  .meg-intro { margin: 0 0 22px; max-width: 68ch; font-size: var(--fs-md); line-height: 1.65; color: var(--muted); }
+  .bands { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  .band { display: grid; grid-template-columns: 132px minmax(0, 1fr) 108px 150px; align-items: center; gap: 16px; }
+  .band p { margin: 0; }
+  .band-name { font-size: var(--fs-md); font-weight: 600; color: var(--text); }
+  .band-name span { display: block; font-size: var(--fs-sm); font-weight: 400; color: var(--subtle); }
+  .track { position: relative; height: 12px; border-radius: 6px; background: var(--hover); }
+  .bar { position: absolute; inset: 0 auto 0 0; border-radius: 6px; background: var(--subtle); }
+  .band.solid .bar { background: var(--good); }
+  .band.suggestive .bar { background: var(--muted); }
+  .tick { position: absolute; top: -5px; bottom: -5px; width: 2px; margin-left: -1px; background: var(--text); box-shadow: 0 0 0 2px var(--panel); }
+  .band-score { font-size: var(--fs-lg); font-weight: 500; color: var(--text); }
+  .band-score span { display: block; font-size: var(--fs-xs); font-weight: 400; color: var(--subtle); }
+  .band-verdict { font-size: var(--fs-sm); font-weight: 500; color: var(--muted); }
+  .band.solid .band-verdict { color: var(--good); font-weight: 600; }
+  .meg-legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 20px 0 22px; font-size: var(--fs-sm); color: var(--muted); }
+  .meg-legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .key-bar { width: 22px; height: 8px; border-radius: 4px; background: var(--good); }
+  .key-tick { width: 2px; height: 16px; background: var(--text); }
+  .meg .fine { margin-top: 14px; }
+
   .callouts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
   .callout { padding: 24px; border-radius: 16px; background: var(--panel2); border: 1px solid var(--line); }
   .callout.warn { background: var(--warn-soft); border-color: var(--warn-line); }
@@ -281,5 +340,13 @@
     .stat-strip, .scores, .callouts, .datasets, .limits { grid-template-columns: 1fr; }
     .methods li { grid-template-columns: 1fr; }
     .check { min-height: 0; }
+    .meg { padding: 20px 16px; }
+    .band { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; }
+    .band-name { grid-area: 1 / 1; }
+    .band-name span { display: inline; margin-left: 8px; }
+    .band-score { grid-area: 1 / 2; text-align: right; }
+    .band-score span { display: inline; margin-left: 8px; }
+    .track { grid-area: 2 / 1 / 3 / -1; }
+    .band-verdict { grid-area: 3 / 1 / 4 / -1; }
   }
 </style>

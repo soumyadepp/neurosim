@@ -17,6 +17,7 @@ from .mesh import HemisphereMesh, vertex_nodes
 from .receptors import region_profile, relative_density
 from .regions import pretty_name, sim_region_for
 from .space import SimSpace
+from .spatial import distance_cv, parcel_sphere_centroids, spin_p, spin_permutations
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "raw"
@@ -31,6 +32,8 @@ CEREBELLUM_CENTER_MM = np.array([0.0, -62.0, -34.0])
 CEREBELLUM_RADII_MM = np.array([50.0, 23.0, 30.0])
 
 MEG_BANDS = ["delta", "theta", "alpha", "beta", "gamma1", "gamma2"]
+MEG_SPINS = 10000
+MEG_SPIN_SEED = 0
 
 ENIGMA_DISORDERS = [
     "22q", "adhd", "asd", "epilepsy_gge", "epilepsy_rtle", "epilepsy_ltle", "depression",
@@ -160,11 +163,54 @@ def _volume_centroids(ids: dict[str, int]) -> dict[str, np.ndarray]:
     return out
 
 
-def build(out_dir: Path) -> None:
+def _sphere_centroids(hemispheres: dict, hemis: list[str]) -> np.ndarray:
+    out = np.zeros((len(hemis), 3))
+    for h in ("L", "R"):
+        idx = [i for i, hh in enumerate(hemis) if hh == h]
+        vertices, _ = nib.freesurfer.read_geometry(str(SURF / f"{'lh' if h == 'L' else 'rh'}.sphere"))
+        out[idx] = parcel_sphere_centroids(vertices, hemispheres[h][3] - idx[0], len(idx))
+    return out
+
+
+def receptor_meg_validation(
+    receptors: np.ndarray, meg: np.ndarray, coords: np.ndarray, sphere: np.ndarray, hemis: list[str], n_spins: int,
+) -> dict:
+    """Tests whether receptor density predicts MEG band power beyond what smoothness explains.
+
+    The score is the held-out correlation from distance-dependent cross-validation. The null
+    repeats the same analysis with the receptor maps spun on the sphere, so it shows how well
+    maps that are equally smooth but anatomically misplaced would have done.
+
+    Args:
+        receptors: Receptor density, one row per region.
+        meg: MEG band power, one row per region and one column per band.
+        coords: Region centroids, used to rank regions by distance.
+        sphere: Region centroids on the unit sphere, used to spin the maps.
+        hemis: Hemisphere label per region.
+        n_spins: Number of spatial rotations in the null.
+
+    Returns:
+        Per-band score, null mean and spin-test p-value, with the number of spins.
+    """
+    observed = distance_cv(receptors, meg, coords)
+    spins = spin_permutations(sphere, np.array(hemis), n_spins, MEG_SPIN_SEED)
+    null = np.array([distance_cv(receptors[spin], meg, coords) for spin in spins])
+    return {
+        "bands": MEG_BANDS,
+        "r": _round(observed, 3),
+        "nullMean": _round(null.mean(axis=0), 3),
+        "p": [round(spin_p(observed[k], null[:, k]), 4) for k in range(len(MEG_BANDS))],
+        "spins": n_spins,
+    }
+
+
+def build(out_dir: Path, meg_spins: int = MEG_SPINS) -> None:
     """Writes brain.json and cortex.bin into out_dir.
 
     Args:
         out_dir: Destination directory, created if missing.
+        meg_spins: Spatial rotations used for the receptor to MEG null. The published figures
+            use the default; fewer is only for fast checks of the build itself.
     """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -256,6 +302,10 @@ def build(out_dir: Path) -> None:
     ]
 
     iu = np.triu_indices(len(labels), 1)
+    meg = np.genfromtxt(HANSEN / "meg_power_scale033.csv", delimiter=",")
+    meg_receptors = receptor_meg_validation(
+        np.column_stack([rel_cortex[n] for n in names]), meg, centroids, _sphere_centroids(hemispheres, hemis), hemis, meg_spins,
+    )
     brain = {
         "version": 1,
         "nodes": nodes_json,
@@ -268,10 +318,14 @@ def build(out_dir: Path) -> None:
             "estimated": ["cerebellum"],
         },
         "anchors": anchors,
-        "meg": {"bands": MEG_BANDS, "values": _round(np.genfromtxt(HANSEN / "meg_power_scale033.csv", delimiter=","), 4)},
+        "meg": {"bands": MEG_BANDS, "values": _round(meg, 4)},
         "enigma": {"disorders": ENIGMA_DISORDERS, "values": _round(np.genfromtxt(HANSEN / "enigma_atrophy.csv", delimiter=","), 4)},
         "mesh": {"file": "cortex.bin", "hemispheres": meshes},
-        "validation": {"scFcR": round(upper_triangle_r(sc, fc), 4), "empiricalMeanFc": round(float(fc[iu].mean()), 4)},
+        "validation": {
+            "scFcR": round(upper_triangle_r(sc, fc), 4),
+            "empiricalMeanFc": round(float(fc[iu].mean()), 4),
+            "megReceptors": meg_receptors,
+        },
         "space": {"mmPerUnit": round(space.mm_per_unit, 4), "centerMm": _round(space.center_mm, 3)},
         "sources": SOURCES,
     }

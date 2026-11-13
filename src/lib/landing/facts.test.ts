@@ -61,6 +61,15 @@ describe('EVIDENCE_FACTS', () => {
     expect(brain.validation.empiricalMeanFc).toBeCloseTo(EVIDENCE_FACTS.empiricalMeanFc, 2);
   });
 
+  it('quotes the receptor to MEG scores, chance levels and p-values recorded in the dataset', () => {
+    const recorded = brain.validation.megReceptors;
+    expect(recorded.bands).toEqual([...EVIDENCE_FACTS.meg.bands]);
+    expect(recorded.r).toEqual([...EVIDENCE_FACTS.meg.r]);
+    expect(recorded.nullMean).toEqual([...EVIDENCE_FACTS.meg.nullMean]);
+    expect(recorded.p).toEqual([...EVIDENCE_FACTS.meg.p]);
+    expect(recorded.spins).toBe(EVIDENCE_FACTS.meg.spins);
+  });
+
   it('quotes the agreement between the spread model and Braak staging', () => {
     const spread = simulateSpread({ sc: brain.sc, seeds, params: SPREAD_DEFAULTS });
     const staging = braakAgreement(brain.nodes.map(n => n.label), arrivalTimes(spread, 0.2));

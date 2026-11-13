@@ -89,7 +89,11 @@ export function makeBrainFixture(): { brain: BrainData; cortex: CortexHemisphere
       values: nodes.map((_, i) => [-0.1 - 0.01 * i]),
     },
     mesh: { file: 'cortex.bin', hemispheres: [] },
-    validation: { scFcR: 0.43, empiricalMeanFc: 0.23 },
+    validation: {
+      scFcR: 0.43,
+      empiricalMeanFc: 0.23,
+      megReceptors: { bands: ['alpha'], r: [0.8], nullMean: [0.5], p: [0.01], spins: 100 },
+    },
     space: { mmPerUnit: 79, centerMm: [0, 0, 0] },
     sources: [],
   };

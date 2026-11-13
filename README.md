@@ -28,7 +28,7 @@ This is the most important section. Some of what you see is measured data, and t
 | Anatomy | Cortical surface (fsaverage5), 68 regions (Lausanne atlas) | **Real**, group template | Standard research templates |
 | Wiring | Region-to-region connection strengths from diffusion MRI | **Real**, group average (Hansen et al. 2022) | Group data, not any one person |
 | Resting activity | Which regions fluctuate together at rest (fMRI) | **Real**, derived from the Human Connectome Project | Group data |
-| Receptor maps | Density of 19 neurotransmitter receptors per region, from 41 PET tracers | **Real**, group average (Hansen et al. 2022) | Group data |
+| Receptor maps | Density of 19 neurotransmitter receptors per region, from 41 PET tracers | **Real**, group average (Hansen et al. 2022) | Group data. Checked against MEG: the maps predict theta and alpha power in unseen, distant regions (r ≈ 0.90 and 0.84) against about 0.5 for spatially rotated maps, surviving correction across six bands. Delta and beta are suggestive only, and gamma is not distinguishable from chance. |
 | MEG band power | Relative power in 6 frequency bands per region | **Real**, group average (HCP) | Group data |
 | Measured atrophy | Cortical thinning in 13 disorders (Cohen's d) | **Real**, ENIGMA case-control meta-analyses | Group data, no Alzheimer's map exists |
 | Spiking network | 1,100 leaky integrate-and-fire neurons in 14 regions, placed on the real cortex | **Model**, hand-tuned | Illustrative only. Pathways and weights are set by hand, not fitted to recordings. Task scores are relative to the model's own healthy baseline. |

@@ -6,13 +6,15 @@ import pytest
 
 from neurosim_data.build import RAW, build
 
+FAST_SPINS = 40
+
 pytestmark = pytest.mark.skipif(not (RAW / "hansen_receptors" / "sc_weighted.npy").exists(), reason="raw data not downloaded")
 
 
 @pytest.fixture(scope="module")
 def out(tmp_path_factory) -> Path:
     target = tmp_path_factory.mktemp("data")
-    build(target)
+    build(target, meg_spins=FAST_SPINS)
     return target
 
 
@@ -121,3 +123,13 @@ def test_carries_enigma_atrophy_per_region(brain):
     assert "parkinsons" in enigma["disorders"]
     assert len(enigma["values"]) == 68
     assert all(len(row) == 13 for row in enigma["values"])
+
+
+def test_receptor_meg_validation_reports_every_band_against_its_null(brain):
+    result = brain["validation"]["megReceptors"]
+    assert result["bands"] == brain["meg"]["bands"]
+    assert result["spins"] == FAST_SPINS
+    for key in ("r", "nullMean", "p"):
+        assert len(result[key]) == len(result["bands"])
+    assert all(0 < p <= 1 for p in result["p"])
+    assert all(r > null for r, null in zip(result["r"], result["nullMean"]))
