@@ -4,7 +4,7 @@ An interactive brain simulator in the browser. It runs a small spiking neural ne
 
 > **This is an educational simulation, not a medical tool.** It models an average brain built from group data. It cannot detect, diagnose or predict anything for a real person.
 
-![Story mode: Alzheimer's disease at age 66](docs/story.jpg)
+![NeuroSim story mode: Alzheimer's at age 77, with treatment started at a positive blood test buying 6.7 extra years of independence](docs/story.jpg)
 
 ## What you can do
 
