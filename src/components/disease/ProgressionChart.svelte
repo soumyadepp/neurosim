@@ -20,15 +20,17 @@
   type SeriesKey = keyof typeof COURSE_COLORS;
   const SERIES = (['tau', 'network', 'decline'] as const).map(key => ({ key, color: COURSE_COLORS[key] }));
 
-  const H = 168, PAD = { l: 36, r: 14, t: 24, b: 22 };
   let w = $state(640);
+  const compact = $derived(w < 420);
+  const H = $derived(compact ? 152 : 168);
+  const PAD = $derived(compact ? { l: 30, r: 12, t: 34, b: 24 } : { l: 36, r: 14, t: 24, b: 22 });
   const plotW = $derived(Math.max(10, w - PAD.l - PAD.r));
   const x = (t: number) => PAD.l + (t / HORIZON) * plotW;
   const y = (v: number) => H - PAD.b - Math.min(1, Math.max(0, v)) * (H - PAD.t - PAD.b);
   const yearAt = (px: number) => Math.min(HORIZON, Math.max(0, ((px - PAD.l) / plotW) * HORIZON));
 
   const primary = $derived(treated ?? untreated);
-  const ageTicks = Array.from({ length: HORIZON / 5 + 1 }, (_, i) => i * 5);
+  const ageTicks = $derived(Array.from({ length: HORIZON / (compact ? 10 : 5) + 1 }, (_, i) => i * (compact ? 10 : 5)));
 
   function points(c: Course, k: SeriesKey): [number, number][] {
     if (k === 'network') return c.network.map((v, i) => [c.networkTimes[i], v]);
@@ -51,6 +53,7 @@
 
   const labels = $derived<Record<SeriesKey, string>>({ tau: d.series.tau, network: d.series.network, decline: d.series.decline(symptom) });
   const m = $derived(primary.milestones);
+  const crowded = $derived(m.symptoms !== null && m.care !== null && Math.abs(x(m.care) - x(m.symptoms)) < 92);
   const firstFound = $derived([m.biomarker, m.network].filter((v): v is number => v !== null).reduce((a, b) => Math.min(a, b), Infinity));
   const band = $derived(Number.isFinite(firstFound) && m.symptoms !== null && m.symptoms > firstFound ? { from: firstFound, to: m.symptoms } : null);
 
@@ -104,6 +107,7 @@
     aria-valuetext={d.age(Math.floor(START_AGE + year))}
     aria-disabled={disabled}
     class:disabled
+    class:compact
     onpointerdown={down}
     onpointermove={move}
     onpointerup={up}
@@ -128,8 +132,15 @@
 
     {#each [['symptoms', m.symptoms], ['care', m.care]] as const as [k, t] (k)}
       {#if t !== null}
+        {@const flip = x(t) > w - 78}
+        {@const lifted = k === 'care' && crowded}
         <line class="mark" x1={x(t)} x2={x(t)} y1={PAD.t - 8} y2={H - PAD.b} />
-        <text class="mark-label" x={x(t) + 4} y={PAD.t - 12}>{d.marks[k]}</text>
+        <text
+          class="mark-label"
+          x={flip ? x(t) - 4 : x(t) + 4}
+          y={lifted ? PAD.t - 25 : PAD.t - 12}
+          text-anchor={flip ? 'end' : 'start'}
+        >{d.marks[k]}</text>
       {/if}
     {/each}
 
@@ -184,6 +195,10 @@
   svg.disabled { cursor: not-allowed; opacity: .7; }
   .grid { stroke: var(--line); stroke-width: 1; }
   .tick { font-size: 10px; fill: var(--subtle); font-family: var(--mono); }
+  .compact .tick { font-size: 11.5px; }
+  .compact .mark-label, .compact .band-label { font-size: 11.5px; }
+  .compact .handle { r: 7; }
+  .compact .dot { r: 4.5; }
   .band { fill: var(--text); fill-opacity: .05; }
   .band-label { font-size: 10.5px; font-weight: 600; fill: var(--text-2); }
   .mark { stroke: var(--text-2); stroke-width: 1; stroke-dasharray: 2 3; }

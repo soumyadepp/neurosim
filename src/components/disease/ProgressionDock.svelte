@@ -57,8 +57,16 @@
       <p class="caption" aria-live="polite">{scenario.captions[phase]}</p>
       <div class="test">
         {#if result}<span class="result {tone}" role="status">{d.test.result(pct, disease.testAge!)}</span>{/if}
-        <button class="btn sm" type="button" disabled={busy} title={d.test.hint} onclick={testAtCurrentAge}>
-          <FlaskConical size={13} />{testing ? d.test.running : d.test.run(scenario.test, Math.floor(START_AGE + disease.year))}
+        <button
+          class="btn sm"
+          type="button"
+          disabled={busy}
+          title={d.test.hint}
+          aria-label={d.test.run(scenario.test, Math.floor(START_AGE + disease.year))}
+          onclick={testAtCurrentAge}
+        >
+          <FlaskConical size={13} />
+          <span class="test-label">{testing ? d.test.running : d.test.run(scenario.test, Math.floor(START_AGE + disease.year))}</span>
         </button>
       </div>
     </div>
@@ -164,5 +172,32 @@
   @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
   @media (max-width: 860px) {
     .caption { display: none; }
+    .test { margin-left: auto; }
+  }
+  @media (max-width: 640px) {
+    .dock { padding: 12px 14px 10px; }
+
+    .top { flex-wrap: wrap; gap: 10px; row-gap: 10px; margin-bottom: 10px; }
+    .play { order: 1; width: 48px; height: 48px; }
+    .when { order: 2; }
+    .when strong { font-size: 22px; min-width: 0; }
+    .when span { display: none; }
+    .phase { order: 3; margin-left: auto; font-size: var(--fs-base); padding: 5px 12px; }
+    .caption {
+      order: 4; flex: 1 0 100%; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2;
+      font-size: var(--fs-md); line-height: 1.45;
+    }
+    .test { display: none; }
+
+    .treat-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; margin: 14px 0 0; }
+    .treat-label { grid-area: 1 / 1; align-self: center; font-size: var(--fs-md); }
+    .gain-chip { grid-area: 1 / 2; justify-self: end; font-size: var(--fs-base); }
+    .treat-seg { grid-area: 2 / 1 / 3 / -1; width: 100%; }
+    .note-line { display: none; }
+
+    .foot { gap: 10px; margin-top: 10px; }
+    .legend { font-size: var(--fs-sm); gap: 6px 14px; }
+    .legend i { width: 16px; }
+    .status { font-size: var(--fs-sm); }
   }
 </style>

@@ -60,7 +60,7 @@
 </div>
 
 <style>
-  .view { position: absolute; right: 16px; top: 14px; z-index: 3; }
+  .view { position: relative; }
   .trigger { box-shadow: var(--shadow-sm); background: var(--overlay); backdrop-filter: blur(8px); }
   .pop {
     position: absolute; right: 0; top: calc(100% + 6px); width: 248px; padding: 12px;

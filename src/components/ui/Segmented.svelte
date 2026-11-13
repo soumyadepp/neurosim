@@ -1,4 +1,6 @@
 <script lang="ts" generics="T extends string">
+  import { haptic } from '../../lib/haptics';
+
   interface Option {
     value: T;
     label: string;
@@ -17,7 +19,7 @@
 
 <div class="seg" role="radiogroup" aria-label={label} style:--count={options.length}>
   {#each options as o (o.value)}
-    <button type="button" role="radio" aria-checked={o.value === value} class:on={o.value === value} title={o.title} onclick={() => onchange(o.value)}>
+    <button type="button" role="radio" aria-checked={o.value === value} class:on={o.value === value} title={o.title} onclick={() => { if (o.value !== value) haptic('select'); onchange(o.value); }}>
       {o.label}
     </button>
   {/each}
@@ -36,4 +38,7 @@
   button:hover { color: var(--text); }
   button.on { background: var(--panel); color: var(--text); box-shadow: var(--shadow); }
   button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+  @media (max-width: 640px) {
+    button { height: 36px; padding: 0 4px; font-size: var(--fs-sm); }
+  }
 </style>

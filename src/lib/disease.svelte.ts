@@ -9,6 +9,7 @@ import {
 import { SCENARIOS, SPREAD_DEFAULTS, scenarioNodes, type DiseaseScenario, type ScenarioId } from './disease/scenarios';
 import { simulateSpread, tauAt, type SpreadResult, type Treatment } from './disease/spread';
 import { arrivalTimes, braakAgreement, type StagingAgreement } from './disease/staging';
+import { crossesAny, haptic } from './haptics';
 import { TOUR_STEPS, tourStopYear, type TourStep } from './disease/tour';
 import { diseaseSpec, HORIZON, NETWORK_TIMES, START_AGE } from './disease/course';
 
@@ -225,8 +226,14 @@ export function setEfficacy(value: number): void {
 
 export function setYear(year: number): void {
   if (ui.runningTaskId) return;
-  disease.year = Math.min(HORIZON, Math.max(0, year));
+  const from = disease.year;
+  const to = Math.min(HORIZON, Math.max(0, year));
+  disease.year = to;
   applyYear();
+  const milestones = (course.treated ?? course.untreated)?.milestones;
+  if (milestones && crossesAny(from, to, [milestones.biomarker, milestones.network, milestones.symptoms, milestones.care])) {
+    haptic('milestone');
+  }
 }
 
 /**
@@ -284,6 +291,7 @@ export function nextTourStep(): void {
   const step = TOUR_STEPS[i + 1];
   if (!step || !course.untreated) { endTour(); return; }
   tour.step = step;
+  haptic('select');
   const stop = tourStopYear(step, course.untreated.milestones, disease.year);
   if (stop > disease.year) play(stop);
 }

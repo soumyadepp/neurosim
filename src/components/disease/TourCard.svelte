@@ -114,4 +114,17 @@
   .ff { display: grid; place-items: center; color: var(--signal); animation: nudge 1s ease-in-out infinite; }
   @keyframes nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(3px); } }
   @media (prefers-reduced-motion: reduce) { .ff { animation: none; } }
+
+  @media (max-width: 640px) {
+    .card {
+      left: 8px; right: 8px; top: auto; bottom: 10px;
+      width: auto; padding: 16px 16px 12px; border-radius: 16px;
+    }
+    .head { gap: 12px; }
+    .badge { width: 38px; height: 38px; border-radius: 11px; }
+    h3 { font-size: 18px; }
+    .body { margin: 10px 0 12px; font-size: var(--fs-base); }
+    .actions { gap: 12px; }
+    .travel { left: 8px; top: auto; bottom: 10px; }
+  }
 </style>

@@ -56,11 +56,6 @@
     {/if}
     {#if diseaseMode}
       <TourCard />
-      {#if !ui.dev && !ui.runningTaskId}
-        <div class="condition">
-          <Segmented label={d.conditionEyebrow} options={scenarioOptions} value={disease.scenario} onchange={id => setScenario(id as ScenarioId)} />
-        </div>
-      {/if}
       <div class="tau-chip" title={d.surfaceLegend.title}>
         <i style:background={tauGradient}></i>{d.surfaceLegend.title}
       </div>
@@ -68,7 +63,14 @@
       <Legend />
       <div class="hint">{strings.viewport.hint}</div>
     {/if}
-    <ViewControls />
+    <div class="stage-top">
+      {#if diseaseMode && !ui.dev && !ui.runningTaskId}
+        <div class="condition">
+          <Segmented label={d.conditionEyebrow} options={scenarioOptions} value={disease.scenario} onchange={id => setScenario(id as ScenarioId)} />
+        </div>
+      {/if}
+      <div class="view-slot"><ViewControls /></div>
+    </div>
   </div>
   {#if diseaseMode}
     <ProgressionDock />
@@ -85,11 +87,17 @@
     overflow: hidden;
   }
   .stage { position: relative; min-height: 0; }
+  .stage-top {
+    position: absolute; top: 12px; left: 12px; right: 12px; z-index: 3;
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 10px;
+    pointer-events: none;
+  }
+  .stage-top > * { pointer-events: auto; }
   .condition {
-    position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 3;
-    width: min(380px, calc(100% - 140px));
+    grid-column: 2; min-width: 0; max-width: 380px;
     background: var(--overlay); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); backdrop-filter: blur(8px);
   }
+  .view-slot { grid-column: 3; justify-self: end; }
   .tau-chip {
     position: absolute; left: 16px; bottom: 14px; display: flex; align-items: center; gap: 8px;
     padding: 6px 12px; background: var(--overlay); border: 1px solid var(--line); border-radius: 999px;
@@ -127,5 +135,11 @@
   }
   @media (max-width: 860px) {
     .hint { display: none; }
+  }
+  @media (max-width: 640px) {
+    .stage-top { top: 8px; left: 8px; right: 8px; grid-template-columns: minmax(0, 1fr) auto; }
+    .condition { grid-column: 1; max-width: none; }
+    .view-slot { grid-column: 2; }
+    .tau-chip { display: none; }
   }
 </style>

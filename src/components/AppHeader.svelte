@@ -92,8 +92,8 @@
     .stats .stat:nth-child(n + 2) { display: none; }
   }
   @media (max-width: 640px) {
-    header { grid-template-columns: auto 1fr; }
-    .mode { justify-self: end; width: 160px; }
+    header { grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; padding: 0 12px; }
+    .mode { width: auto; justify-self: center; }
     .stats, .source { display: none; }
   }
 </style>

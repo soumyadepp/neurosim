@@ -88,5 +88,8 @@
       grid-template-columns: 1fr;
       grid-template-rows: 52vh 1fr;
     }
+    main.solo {
+      grid-template-rows: 1fr;
+    }
   }
 </style>
