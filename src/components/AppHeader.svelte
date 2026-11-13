@@ -58,8 +58,8 @@
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 24px;
-    height: 52px;
-    padding: 0 16px;
+    height: calc(52px + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 16px 0;
     background: var(--paper);
     border-bottom: 1px solid var(--line);
     min-width: 0;

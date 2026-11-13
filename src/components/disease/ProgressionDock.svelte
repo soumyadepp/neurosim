@@ -108,7 +108,7 @@
 
 <style>
   .dock {
-    padding: 12px 16px 10px;
+    padding: 12px 16px calc(10px + env(safe-area-inset-bottom, 0px));
     background: var(--panel);
     border-top: 1px solid var(--line);
     box-shadow: 0 -4px 12px rgba(15, 23, 42, .04);
@@ -175,7 +175,7 @@
     .test { margin-left: auto; }
   }
   @media (max-width: 640px) {
-    .dock { padding: 12px 14px 10px; }
+    .dock { padding: 12px 14px calc(10px + env(safe-area-inset-bottom, 0px)); }
 
     .top { flex-wrap: wrap; gap: 10px; row-gap: 10px; margin-bottom: 10px; }
     .play { order: 1; width: 48px; height: 48px; }
@@ -199,5 +199,30 @@
     .legend { font-size: var(--fs-sm); gap: 6px 14px; }
     .legend i { width: 16px; }
     .status { font-size: var(--fs-sm); }
+  }
+
+  @media (max-width: 640px) and (max-height: 820px) {
+    .dock { padding-top: 10px; }
+    .top { margin-bottom: 8px; gap: 8px; row-gap: 8px; }
+    .play { width: 44px; height: 44px; }
+    .when strong { font-size: 20px; }
+    .caption { -webkit-line-clamp: 2; line-clamp: 2; font-size: var(--fs-base); }
+    .treat-row { margin-top: 10px; gap: 6px 10px; }
+    .foot { margin-top: 8px; gap: 6px; }
+    .legend { font-size: var(--fs-xs); gap: 4px 12px; }
+    .legend i { width: 13px; }
+  }
+
+  @media (max-width: 640px) and (max-height: 700px) {
+    .dock { padding: 8px 14px calc(8px + env(safe-area-inset-bottom, 0px)); }
+    .top { margin-bottom: 6px; row-gap: 6px; }
+    .play { width: 40px; height: 40px; }
+    .when strong { font-size: 18px; }
+    .phase { font-size: var(--fs-sm); padding: 3px 10px; }
+    .caption { -webkit-line-clamp: 1; line-clamp: 1; font-size: var(--fs-base); }
+    .treat-row { margin-top: 8px; }
+    .treat-label { font-size: var(--fs-base); }
+    .foot { margin-top: 6px; }
+    .legend { font-size: 11px; gap: 3px 10px; }
   }
 </style>

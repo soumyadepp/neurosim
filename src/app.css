@@ -74,8 +74,6 @@
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
   color-scheme: light;
   box-sizing: border-box;
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme="light"])) {
@@ -209,6 +207,9 @@
 }
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #app { height: 100%; margin: 0; }
+@supports (height: 100dvh) {
+  html { height: 100dvh; }
+}
 body {
   background: var(--bg);
   color: var(--text);

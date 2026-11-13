@@ -21,9 +21,12 @@
   const SERIES = (['tau', 'network', 'decline'] as const).map(key => ({ key, color: COURSE_COLORS[key] }));
 
   let w = $state(640);
+  let vh = $state(900);
   const compact = $derived(w < 420);
-  const H = $derived(compact ? 152 : 168);
-  const PAD = $derived(compact ? { l: 30, r: 12, t: 34, b: 24 } : { l: 36, r: 14, t: 24, b: 22 });
+  const short = $derived(compact && vh < 820);
+  const tiny = $derived(compact && vh < 700);
+  const H = $derived(tiny ? 102 : short ? 126 : compact ? 152 : 168);
+  const PAD = $derived(compact ? { l: 30, r: 12, t: tiny ? 28 : 34, b: tiny ? 20 : 24 } : { l: 36, r: 14, t: 24, b: 22 });
   const plotW = $derived(Math.max(10, w - PAD.l - PAD.r));
   const x = (t: number) => PAD.l + (t / HORIZON) * plotW;
   const y = (v: number) => H - PAD.b - Math.min(1, Math.max(0, v)) * (H - PAD.t - PAD.b);
@@ -93,6 +96,8 @@
   const showTip = $derived(hover !== null);
   const age = (t: number) => String(Math.floor(START_AGE + t + 1e-9));
 </script>
+
+<svelte:window bind:innerHeight={vh} />
 
 <div class="chart" bind:clientWidth={w}>
   <svg
