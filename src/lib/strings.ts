@@ -44,7 +44,7 @@ export const strings = {
     pause: 'Pause',
     resume: 'Resume',
     speed: 'Speed',
-    shell: 'Shell',
+    shell: 'Brain surface',
     labels: 'Labels',
   },
   tabs: {

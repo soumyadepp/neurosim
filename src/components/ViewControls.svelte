@@ -37,12 +37,12 @@
       <button class="btn row" type="button" onclick={() => (ui.paused = !ui.paused)}>
         {#if ui.paused}<Play size={14} />{vp.resume}{:else}<Pause size={14} />{vp.pause}{/if}
       </button>
+      <label class="range">
+        <span>{vp.shell}</span>
+        <input type="range" min="0" max="100" value={ui.shell} oninput={e => setShell(e.currentTarget.valueAsNumber)} />
+        <output class="mono">{ui.shell}%</output>
+      </label>
       {#if ui.dev}
-        <label class="range">
-          <span>{vp.shell}</span>
-          <input type="range" min="0" max="100" value={ui.shell} oninput={e => setShell(e.currentTarget.valueAsNumber)} />
-          <output class="mono">{ui.shell}%</output>
-        </label>
         <p class="eyebrow sim">{v.simulation}</p>
         <div class="pair">
           <button class="btn" type="button" title={strings.hud.resetTitle} onclick={resetActivity}>
@@ -63,7 +63,7 @@
   .view { position: relative; }
   .trigger { box-shadow: var(--shadow-sm); background: var(--overlay); backdrop-filter: blur(8px); }
   .pop {
-    position: absolute; right: 0; top: calc(100% + 6px); width: 248px; padding: 12px;
+    position: absolute; right: 0; top: calc(100% + 6px); width: 270px; padding: 12px;
     display: grid; gap: 8px;
     background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow-md);
   }
@@ -71,7 +71,8 @@
   .eyebrow.sim { margin-top: 6px; }
   .row { justify-content: flex-start; }
   .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .range { display: grid; grid-template-columns: 44px 1fr 38px; align-items: center; gap: 8px; font-size: var(--fs-sm); color: var(--muted); }
+  .range { display: grid; grid-template-columns: auto minmax(60px, 1fr) 38px; align-items: center; gap: 8px; font-size: var(--fs-sm); color: var(--muted); }
+  .range > span { white-space: nowrap; }
   .range input { width: 100%; accent-color: var(--signal); }
   .range output { text-align: right; font-size: var(--fs-sm); color: var(--text-2); }
 </style>
