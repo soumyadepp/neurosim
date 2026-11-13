@@ -19,6 +19,11 @@ export const BRAAK_STAGE: Record<string, number> = {
 };
 
 /**
+ * Tau level at which a region counts as reached.
+ */
+export const ARRIVAL_THRESHOLD = 0.2;
+
+/**
  * First sampled time at which each region's tau reaches the threshold, or Infinity if it never does.
  */
 export function arrivalTimes(res: SpreadResult, threshold: number): number[] {

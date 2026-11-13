@@ -27,6 +27,23 @@ python -m venv .venv
 
 `fetch` downloads the Hansen et al. (2022) files pinned to commit `f8b41da` of [netneurolab/hansen_receptors](https://github.com/netneurolab/hansen_receptors), plus the Lausanne atlas and fsaverage5 surfaces through netneurotools. The build tests are skipped until the raw data is present.
 
+It also expects six group-average patient maps from NeuroVault (collections [12296](https://neurovault.org/collections/12296) and [3829](https://neurovault.org/collections/3829), both CC0) in `raw/neurovault`. NeuroVault files are not versioned, so each is pinned by SHA-256 and `fetch` refuses a file that does not match.
+
+Known limitation: NeuroVault answers Python's default HTTP client with 403, so `fetch` cannot download these six itself yet. Until that is settled, fetch them once with curl and run `fetch` again to verify them:
+
+```bash
+mkdir -p raw/neurovault && cd raw/neurovault
+base=https://neurovault.org/media/images
+curl -L -o limbic.nii.gz        $base/12296/MeanTauZMasked_Subtype1.nii.gz
+curl -L -o mtlSparing.nii.gz    $base/12296/MeanTauZMasked_Subtype2.nii.gz
+curl -L -o posterior.nii.gz     $base/12296/MeanTauZMasked_Subtype3.nii.gz
+curl -L -o leftTemporal.nii.gz  $base/12296/MeanTauZMasked_Subtype4.nii.gz
+curl -L -o clinic.nii.gz        $base/3829/mean_32_wwAV1451_1.nii.gz
+curl -L -o clinicAtrophy.nii.gz $base/3829/mean_32_w_jacob_GMs8_inv.nii.gz
+```
+
+The build also writes `src/lib/testing/spins.json`: 1,000 spatial rotations of the 68 regions, used by the app's tests to score the disease model against the measured tau maps.
+
 ## What the build does
 
 | Module | Job |

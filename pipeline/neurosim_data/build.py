@@ -18,10 +18,12 @@ from .receptors import region_profile, relative_density
 from .regions import pretty_name, sim_region_for
 from .space import SimSpace
 from .spatial import distance_cv, parcel_sphere_centroids, spin_p, spin_permutations
+from .volumes import parcellate
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "raw"
 HANSEN = RAW / "hansen_receptors"
+NEUROVAULT = RAW / "neurovault"
 NNT = RAW / "nnt"
 SURF = NNT / "tpl-fsaverage" / "fsaverage5" / "surf"
 ANNOT = NNT / "atl-cammoun2012" / "fsaverage5" / "atl-Cammoun2012_space-fsaverage5_res-033_hemi-{h}_deterministic.annot"
@@ -32,8 +34,12 @@ CEREBELLUM_CENTER_MM = np.array([0.0, -62.0, -34.0])
 CEREBELLUM_RADII_MM = np.array([50.0, 23.0, 30.0])
 
 MEG_BANDS = ["delta", "theta", "alpha", "beta", "gamma1", "gamma2"]
-MEG_SPINS = 10000
-MEG_SPIN_SEED = 0
+SPINS = 10000
+SPIN_SEED = 0
+MODEL_SPINS = 1000
+
+TAU_MAPS = ["limbic", "mtlSparing", "posterior", "leftTemporal", "clinic"]
+TAU_ATROPHY_MAP = "clinicAtrophy"
 
 ENIGMA_DISORDERS = [
     "22q", "adhd", "asd", "epilepsy_gge", "epilepsy_rtle", "epilepsy_ltle", "depression",
@@ -128,6 +134,18 @@ SOURCES = [
         "url": "https://surfer.nmr.mgh.harvard.edu/",
     },
     {
+        "name": "Tau PET subtypes in Alzheimer's disease",
+        "citation": "Vogel JW et al. (2021). Four distinct trajectories of tau deposition identified in Alzheimer's disease. Nature Medicine 27, 871-881.",
+        "license": "CC0 (NeuroVault collection 12296)",
+        "url": "https://neurovault.org/collections/12296",
+    },
+    {
+        "name": "Tau PET and longitudinal atrophy in the same patients",
+        "citation": "La Joie R et al. (2020). Prospective longitudinal atrophy in Alzheimer's disease correlates with the intensity and topography of baseline tau-PET. Science Translational Medicine 12, eaau5732.",
+        "license": "CC0 (NeuroVault collection 3829)",
+        "url": "https://neurovault.org/collections/3829",
+    },
+    {
         "name": "Whole-brain Hopf model",
         "citation": "Deco G et al. (2017). The dynamics of resting fluctuations in the brain: metastability and its dynamical cortical core. Scientific Reports 7, 3095.",
         "license": "Method",
@@ -172,9 +190,7 @@ def _sphere_centroids(hemispheres: dict, hemis: list[str]) -> np.ndarray:
     return out
 
 
-def receptor_meg_validation(
-    receptors: np.ndarray, meg: np.ndarray, coords: np.ndarray, sphere: np.ndarray, hemis: list[str], n_spins: int,
-) -> dict:
+def receptor_meg_validation(receptors: np.ndarray, meg: np.ndarray, coords: np.ndarray, spins: np.ndarray) -> dict:
     """Tests whether receptor density predicts MEG band power beyond what smoothness explains.
 
     The score is the held-out correlation from distance-dependent cross-validation. The null
@@ -185,32 +201,55 @@ def receptor_meg_validation(
         receptors: Receptor density, one row per region.
         meg: MEG band power, one row per region and one column per band.
         coords: Region centroids, used to rank regions by distance.
-        sphere: Region centroids on the unit sphere, used to spin the maps.
-        hemis: Hemisphere label per region.
-        n_spins: Number of spatial rotations in the null.
+        spins: Spatial rotations of the regions, one permutation per row.
 
     Returns:
         Per-band score, null mean and spin-test p-value, with the number of spins.
     """
     observed = distance_cv(receptors, meg, coords)
-    spins = spin_permutations(sphere, np.array(hemis), n_spins, MEG_SPIN_SEED)
     null = np.array([distance_cv(receptors[spin], meg, coords) for spin in spins])
     return {
         "bands": MEG_BANDS,
         "r": _round(observed, 3),
         "nullMean": _round(null.mean(axis=0), 3),
         "p": [round(spin_p(observed[k], null[:, k]), 4) for k in range(len(MEG_BANDS))],
-        "spins": n_spins,
+        "spins": len(spins),
     }
 
 
-def build(out_dir: Path, meg_spins: int = MEG_SPINS) -> None:
+def tau_atrophy_validation(tau: np.ndarray, atrophy: np.ndarray, spins: np.ndarray) -> dict:
+    """Tests whether measured tau and measured atrophy share a pattern beyond smoothness.
+
+    Both maps come from the same patients, tau at baseline and atrophy over the following
+    months. The disease model assumes thinning follows tau, and this is the check on that
+    assumption in real data.
+
+    Args:
+        tau: Tau PET signal per region.
+        atrophy: Longitudinal atrophy per region.
+        spins: Spatial rotations of the regions, one permutation per row.
+
+    Returns:
+        The correlation, its mean under the spin null, the spin-test p-value and the number of spins.
+    """
+    observed = float(np.corrcoef(tau, atrophy)[0, 1])
+    null = np.array([np.corrcoef(tau, atrophy[spin])[0, 1] for spin in spins])
+    return {"r": round(observed, 3), "nullMean": round(float(null.mean()), 3), "p": round(spin_p(observed, null), 4), "spins": len(spins)}
+
+
+def _measured_map(name: str, atlas: nib.Nifti1Image, region_ids: list[int]) -> np.ndarray:
+    return parcellate(nib.load(str(NEUROVAULT / f"{name}.nii.gz")), atlas, region_ids)
+
+
+def build(out_dir: Path, n_spins: int = SPINS, spins_out: Path | None = None) -> None:
     """Writes brain.json and cortex.bin into out_dir.
 
     Args:
         out_dir: Destination directory, created if missing.
-        meg_spins: Spatial rotations used for the receptor to MEG null. The published figures
-            use the default; fewer is only for fast checks of the build itself.
+        n_spins: Spatial rotations used for every spin-test null. The published figures use the
+            default; fewer is only for fast checks of the build itself.
+        spins_out: Where to write the first rotations as JSON, for tests that score the disease
+            model against measured maps. Skipped when omitted.
     """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -303,9 +342,14 @@ def build(out_dir: Path, meg_spins: int = MEG_SPINS) -> None:
 
     iu = np.triu_indices(len(labels), 1)
     meg = np.genfromtxt(HANSEN / "meg_power_scale033.csv", delimiter=",")
-    meg_receptors = receptor_meg_validation(
-        np.column_stack([rel_cortex[n] for n in names]), meg, centroids, _sphere_centroids(hemispheres, hemis), hemis, meg_spins,
-    )
+    spins = spin_permutations(_sphere_centroids(hemispheres, hemis), np.array(hemis), n_spins, SPIN_SEED)
+    meg_receptors = receptor_meg_validation(np.column_stack([rel_cortex[n] for n in names]), meg, centroids, spins)
+    atlas = nib.load(str(VOLUME))
+    region_ids = [int(i) for i in cortex.id]
+    tau = np.column_stack([_measured_map(name, atlas, region_ids) for name in TAU_MAPS])
+    tau_atrophy = tau_atrophy_validation(tau[:, TAU_MAPS.index("clinic")], _measured_map(TAU_ATROPHY_MAP, atlas, region_ids), spins)
+    if spins_out is not None:
+        spins_out.write_text(json.dumps(spins[:MODEL_SPINS].tolist(), separators=(",", ":")))
     brain = {
         "version": 1,
         "nodes": nodes_json,
@@ -319,12 +363,14 @@ def build(out_dir: Path, meg_spins: int = MEG_SPINS) -> None:
         },
         "anchors": anchors,
         "meg": {"bands": MEG_BANDS, "values": _round(meg, 4)},
+        "tau": {"maps": TAU_MAPS, "values": _round(tau, 4)},
         "enigma": {"disorders": ENIGMA_DISORDERS, "values": _round(np.genfromtxt(HANSEN / "enigma_atrophy.csv", delimiter=","), 4)},
         "mesh": {"file": "cortex.bin", "hemispheres": meshes},
         "validation": {
             "scFcR": round(upper_triangle_r(sc, fc), 4),
             "empiricalMeanFc": round(float(fc[iu].mean()), 4),
             "megReceptors": meg_receptors,
+            "tauAtrophy": tau_atrophy,
         },
         "space": {"mmPerUnit": round(space.mm_per_unit, 4), "centerMm": _round(space.center_mm, 3)},
         "sources": SOURCES,
@@ -333,4 +379,7 @@ def build(out_dir: Path, meg_spins: int = MEG_SPINS) -> None:
 
 
 if __name__ == "__main__":
-    build(Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT.parent / "public" / "data")
+    build(
+        Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT.parent / "public" / "data",
+        spins_out=ROOT.parent / "src" / "lib" / "testing" / "spins.json",
+    )

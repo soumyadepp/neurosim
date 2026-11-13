@@ -84,6 +84,10 @@ export function makeBrainFixture(): { brain: BrainData; cortex: CortexHemisphere
       bands: ['delta', 'theta', 'alpha', 'beta', 'gamma1', 'gamma2'],
       values: nodes.map((_, i) => Array.from({ length: 6 }, (_, b) => 0.1 + 0.01 * ((i + b) % 5))),
     },
+    tau: {
+      maps: ['limbic'],
+      values: nodes.map((_, i) => [1 + 0.1 * i]),
+    },
     enigma: {
       disorders: ['parkinsons'],
       values: nodes.map((_, i) => [-0.1 - 0.01 * i]),
@@ -93,6 +97,7 @@ export function makeBrainFixture(): { brain: BrainData; cortex: CortexHemisphere
       scFcR: 0.43,
       empiricalMeanFc: 0.23,
       megReceptors: { bands: ['alpha'], r: [0.8], nullMean: [0.5], p: [0.01], spins: 100 },
+      tauAtrophy: { r: 0.8, nullMean: 0, p: 0.01, spins: 100 },
     },
     space: { mmPerUnit: 79, centerMm: [0, 0, 0] },
     sources: [],

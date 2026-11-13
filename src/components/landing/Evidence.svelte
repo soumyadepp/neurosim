@@ -4,7 +4,8 @@
   import Brain from '@lucide/svelte/icons/brain';
   import ExternalLink from '@lucide/svelte/icons/external-link';
   import Play from '@lucide/svelte/icons/play';
-  import { bandVerdict } from '../../lib/landing/bands';
+  import { gradeAgainstChance } from '../../lib/landing/verdict';
+  import { SCENARIOS } from '../../lib/disease/scenarios';
   import { EVIDENCE_FACTS } from '../../lib/landing/facts';
   import { reveal } from '../../lib/landing/reveal';
   import { go } from '../../lib/router.svelte';
@@ -21,8 +22,28 @@
     ...M.bands[id],
     score: F.meg.r[i],
     chance: F.meg.nullMean[i],
-    verdict: bandVerdict(F.meg.p[i], F.meg.bands.length),
+    verdict: gradeAgainstChance(F.meg.p[i], F.meg.bands.length),
   }));
+
+  const T = E.tau;
+  const tauTests = F.tau.maps.length * F.tau.scenarios.length;
+  const tauColumns = F.tau.scenarios.map(id => SCENARIOS.find(s => s.id === id)!);
+  const tauRows = F.tau.maps.map((id, m) => ({
+    ...T.maps[id],
+    cells: tauColumns.map((scenario, s) => ({
+      rho: F.tau.rho[m][s],
+      verdict: gradeAgainstChance(F.tau.p[m][s], tauTests),
+      expected: scenario.tauPattern === id,
+    })),
+  }));
+  const tauCell = (map: string, scenario: string) =>
+    F.tau.rho[F.tau.maps.indexOf(map as never)][F.tau.scenarios.indexOf(scenario as never)].toFixed(2);
+  const tauFindings = T.findings({
+    adLimbic: tauCell('limbic', 'alzheimers'),
+    adPosterior: tauCell('posterior', 'alzheimers'),
+    pcaPosterior: tauCell('posterior', 'pca'),
+    tests: tauTests,
+  });
   const stats = [
     { value: String(F.regions), label: E.stats.regions },
     { value: String(F.receptors), label: E.stats.receptors },
@@ -114,10 +135,49 @@
         </div>
         <p class="fine">{E.scoreNote}</p>
         <p class="fine">{E.parkinsonsCaveat}</p>
-        <div class="meg">
+        <div class="panel">
+          <p class="eyebrow">{T.eyebrow}</p>
+          <h3>{T.heading}</h3>
+          <p class="panel-intro">{T.intro(F.tau.people.toLocaleString('en'))}</p>
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th scope="col">{T.measured}</th>
+                {#each tauColumns as c (c.id)}
+                  <th scope="col">{strings.disease.scenarios[c.id].short}</th>
+                {/each}
+              </tr>
+            </thead>
+            <tbody>
+              {#each tauRows as row (row.name)}
+                <tr>
+                  <th scope="row">{row.name}<span>{row.note}</span></th>
+                  {#each row.cells as cell, i (i)}
+                    <td class="mono {cell.verdict}" class:expected={cell.expected}>
+                      {cell.rho.toFixed(2)}
+                      <span class="sr-only">{T.verdicts[cell.verdict]}{cell.expected ? `, ${T.expectedMark}` : ''}</span>
+                    </td>
+                  {/each}
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+          <p class="fine">{T.key}</p>
+          <ul class="findings">
+            {#each tauFindings as f (f.strong)}
+              <li class={f.tone}><strong>{f.strong}</strong> {f.text}</li>
+            {/each}
+          </ul>
+          <div class="callout">
+            <h3>{T.atrophyTitle}</h3>
+            <p>{T.atrophy({ patients: F.tauAtrophy.patients, r: F.tauAtrophy.r.toFixed(2), chance: F.tauAtrophy.nullMean.toFixed(2) })}</p>
+          </div>
+          <p class="fine">{T.method(F.tau.spins.toLocaleString('en'))}</p>
+        </div>
+        <div class="panel">
           <p class="eyebrow">{M.eyebrow}</p>
           <h3>{M.heading}</h3>
-          <p class="meg-intro">{M.intro}</p>
+          <p class="panel-intro">{M.intro}</p>
           <ul class="bands">
             {#each bands as b (b.name)}
               <li class="band {b.verdict}">
@@ -281,9 +341,9 @@
   .score.warn .value { color: var(--st-serious-text); }
   .meaning { margin: 0; font-size: var(--fs-sm); line-height: 1.6; color: var(--muted); }
 
-  .meg { margin-top: 28px; padding: 26px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
-  .meg > h3 { margin: 6px 0 10px; font-family: var(--display); font-size: 24px; font-weight: 500; letter-spacing: -.01em; line-height: 1.2; }
-  .meg-intro { margin: 0 0 22px; max-width: 68ch; font-size: var(--fs-md); line-height: 1.65; color: var(--muted); }
+  .panel { margin-top: 28px; padding: 26px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+  .panel > h3 { margin: 6px 0 10px; font-family: var(--display); font-size: 24px; font-weight: 500; letter-spacing: -.01em; line-height: 1.2; }
+  .panel-intro { margin: 0 0 22px; max-width: 68ch; font-size: var(--fs-md); line-height: 1.65; color: var(--muted); }
   .bands { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
   .band { display: grid; grid-template-columns: 132px minmax(0, 1fr) 108px 150px; align-items: center; gap: 16px; }
   .band p { margin: 0; }
@@ -302,7 +362,25 @@
   .meg-legend span { display: inline-flex; align-items: center; gap: 8px; }
   .key-bar { width: 22px; height: 8px; border-radius: 4px; background: var(--good); }
   .key-tick { width: 2px; height: 16px; background: var(--text); }
-  .meg .fine { margin-top: 14px; }
+  .panel .fine { margin-top: 14px; }
+  .panel .callout { margin-top: 22px; }
+
+  .matrix { width: 100%; border-collapse: collapse; }
+  .matrix th, .matrix td { padding: 12px 10px; border-bottom: 1px solid var(--line); text-align: right; }
+  .matrix thead th { font-size: var(--fs-sm); font-weight: 600; color: var(--muted); vertical-align: bottom; }
+  .matrix th:first-child { text-align: left; padding-left: 0; }
+  .matrix tbody th { font-size: var(--fs-md); font-weight: 600; color: var(--text); }
+  .matrix tbody th span { display: block; font-size: var(--fs-sm); font-weight: 400; color: var(--subtle); }
+  .matrix td { font-size: var(--fs-lg); color: var(--subtle); }
+  .matrix td.suggestive, .matrix td.solid { color: var(--text); font-weight: 600; }
+  .matrix td.solid { color: var(--good); }
+  .matrix td.expected { box-shadow: inset 0 0 0 1.5px var(--text); border-radius: 8px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .findings { list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 10px; }
+  .findings li { padding: 12px 14px 12px 16px; border-left: 3px solid var(--line); font-size: var(--fs-base); line-height: 1.6; color: var(--text-2); }
+  .findings li.good { border-left-color: var(--good); }
+  .findings li.warn { border-left-color: var(--st-serious-line); }
+  .findings strong { color: var(--text); }
 
   .callouts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
   .callout { padding: 24px; border-radius: 16px; background: var(--panel2); border: 1px solid var(--line); }
@@ -340,7 +418,10 @@
     .stat-strip, .scores, .callouts, .datasets, .limits { grid-template-columns: 1fr; }
     .methods li { grid-template-columns: 1fr; }
     .check { min-height: 0; }
-    .meg { padding: 20px 16px; }
+    .panel { padding: 20px 16px; }
+    .matrix th, .matrix td { padding: 10px 6px; }
+    .matrix thead th { font-size: var(--fs-xs); }
+    .matrix td { font-size: var(--fs-md); }
     .band { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; }
     .band-name { grid-area: 1 / 1; }
     .band-name span { display: inline; margin-left: 8px; }

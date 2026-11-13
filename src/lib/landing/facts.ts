@@ -22,6 +22,27 @@ export const EVIDENCE_FACTS = {
   empiricalMeanFc: 0.23,
   braakRho: 0.39,
   parkinsons: { r: 0.42, median: 0.07, year: 20 },
+  tau: {
+    maps: ['limbic', 'mtlSparing', 'posterior', 'leftTemporal', 'clinic'],
+    scenarios: ['alzheimers', 'ftd', 'pca'],
+    rho: [
+      [0.44, -0.05, -0.03],
+      [0.27, -0.19, 0.12],
+      [0.6, -0.45, 0.46],
+      [0.42, -0.14, 0.03],
+      [0.41, -0.32, 0.33],
+    ],
+    p: [
+      [0.021, 0.586, 0.581],
+      [0.089, 0.835, 0.267],
+      [0.013, 0.985, 0.026],
+      [0.018, 0.729, 0.428],
+      [0.047, 0.947, 0.049],
+    ],
+    spins: 1000,
+    people: 1612,
+  },
+  tauAtrophy: { r: 0.828, nullMean: 0.011, p: 0.0019, spins: 10000, patients: 32 },
   meg: {
     bands: ['delta', 'theta', 'alpha', 'beta', 'gamma1', 'gamma2'],
     r: [0.791, 0.895, 0.841, 0.795, 0.684, 0.683],

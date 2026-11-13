@@ -8,7 +8,7 @@ import {
 } from './disease/progression';
 import { SCENARIOS, SPREAD_DEFAULTS, scenarioNodes, type DiseaseScenario, type ScenarioId } from './disease/scenarios';
 import { simulateSpread, tauAt, type SpreadResult, type Treatment } from './disease/spread';
-import { arrivalTimes, braakAgreement, type StagingAgreement } from './disease/staging';
+import { ARRIVAL_THRESHOLD, arrivalTimes, braakAgreement, type StagingAgreement } from './disease/staging';
 import { crossesAny, haptic } from './haptics';
 import { TOUR_STEPS, tourStopYear, type TourStep } from './disease/tour';
 import { diseaseSpec, HORIZON, NETWORK_TIMES, START_AGE } from './disease/course';
@@ -19,7 +19,6 @@ export type TreatmentStart = 'none' | 'biomarker' | 'network' | 'symptoms';
 export type DetectionPoint = Exclude<TreatmentStart, 'none'>;
 
 export const DETECTION_POINTS: DetectionPoint[] = ['biomarker', 'network', 'symptoms'];
-const ARRIVAL_THRESHOLD = 0.2;
 const PLAY_YEARS_PER_SECOND = 2;
 const PLAY_FRAME_MS = 50;
 const TOUR_SEEN_KEY = 'neurosim.tourSeen';

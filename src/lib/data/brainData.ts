@@ -52,12 +52,14 @@ export interface BrainData {
     cerebellum: { center: Vec3; radii: Vec3 };
   };
   meg: { bands: string[]; values: number[][] };
+  tau: { maps: string[]; values: number[][] };
   enigma: { disorders: string[]; values: number[][] };
   mesh: { file: string; hemispheres: MeshLayout[] };
   validation: {
     scFcR: number;
     empiricalMeanFc: number;
     megReceptors: { bands: string[]; r: number[]; nullMean: number[]; p: number[]; spins: number };
+    tauAtrophy: { r: number; nullMean: number; p: number; spins: number };
   };
   space: { mmPerUnit: number; centerMm: Vec3 };
   sources: Source[];

@@ -534,7 +534,7 @@ export const strings = {
     ladder: [
       { name: 'Measured anatomy and chemistry', what: 'Cortical surface, 68 regions, diffusion-MRI wiring, resting-state fMRI, PET receptor maps.', why: 'Published, peer-reviewed measurements from real scanners.', level: 'high' },
       { name: 'Spread along connections', what: 'The idea that toxic protein travels along the brain’s wiring rather than to physical neighbours.', why: 'Supported by autopsy series and by animal experiments where injected tau followed connections.', level: 'high' },
-      { name: 'The spread and brain-activity models', what: 'The equations that move tau through the connectome and simulate how regions synchronise.', why: 'Scored against real fMRI, against autopsy staging, and against measured patient atrophy. Every score is shown below.', level: 'moderate' },
+      { name: 'The spread and brain-activity models', what: 'The equations that move tau through the connectome and simulate how regions synchronise.', why: 'Scored against real fMRI, against autopsy staging, against tau measured in living patients, and against measured patient atrophy. Every score is shown below.', level: 'moderate' },
       { name: 'The milestone ages', what: 'Blood test at 59, scan at 62, symptoms at 68, full-time care at 74.', why: 'The time scale was tuned so the course matches published cohort studies. Calibrated, not discovered.', level: 'moderate' },
       { name: 'The neuron network, symptom rule and drug effect', what: 'The 1,100-neuron simulation, the rule turning damage into symptoms, and the treatment slider.', why: 'Hand-tuned to behave plausibly. They illustrate mechanisms; they are not fitted to data.', level: 'low' },
     ],
@@ -566,8 +566,33 @@ export const strings = {
     ],
     parkinsonsCaveat: 'One honest limit on that last result: the model finds a starting point in the cortex, but Parkinson’s actually begins in the brainstem, which our wiring map does not cover. It shows that damage spreads along connections the way the model assumes. It does not show the model knows where the disease begins.',
     scoreNote: 'Correlation runs from 0 (no relationship) to 1 (identical).',
+    tau: {
+      eyebrow: 'The Alzheimer’s check',
+      heading: 'Does the model put tau where patients actually have it?',
+      intro: (people: string) => `Tau PET scans from ${people} people, sorted by Vogel and colleagues into the four patterns Alzheimer’s actually takes, plus one memory-clinic group. For each condition in the app we asked whether the regions the model reaches first are the regions carrying the most tau in patients. The model was never fitted to any of these maps.`,
+      measured: 'Measured pattern',
+      maps: {
+        limbic: { name: 'Limbic', note: 'memory system first' },
+        mtlSparing: { name: 'Memory sparing', note: 'skips the memory system' },
+        posterior: { name: 'Posterior', note: 'back of the brain first' },
+        leftTemporal: { name: 'Left temporal', note: 'language areas first' },
+        clinic: { name: 'Clinic group', note: '32 patients, one clinic' },
+      },
+      verdicts: { solid: 'beats chance', suggestive: 'better than chance, uncorrected', none: 'no better than chance' },
+      expectedMark: 'expected match',
+      key: 'Agreement runs from -1 (reversed) through 0 (none) to 1 (identical). Bold numbers beat rotated copies of the measured map at the usual threshold; faint ones do not. An outlined cell is the pattern that condition is meant to follow.',
+      findings: (v: { adLimbic: string; adPosterior: string; pcaPosterior: string; tests: number }) => [
+        { tone: 'good', strong: 'The visual variant is specific.', text: `Started in visual cortex, the model agrees with the posterior pattern (${v.pcaPosterior}) and with none of the other three subtypes.` },
+        { tone: 'good', strong: 'The control behaves.', text: 'Frontotemporal dementia is a different disease. Started where it starts, the model reproduces none of the Alzheimer’s patterns, which is the right answer.' },
+        { tone: 'warn', strong: 'Typical Alzheimer’s is not specific.', text: `It agrees with the limbic pattern it is meant to follow (${v.adLimbic}), but agrees with the posterior pattern more (${v.adPosterior}). The model’s order of spread cannot tell those two apart.` },
+        { tone: 'warn', strong: 'Nothing here is certain.', text: `${v.tests} comparisons were made, and none survives correction for making that many. Treat every number in this table as suggestive.` },
+      ],
+      atrophyTitle: 'A second check: does thinning follow tau?',
+      atrophy: (v: { patients: number; r: string; chance: string }) => `The model assumes a region thins in proportion to the tau it holds. In ${v.patients} patients scanned twice, tau at the first scan predicts where the brain shrank afterwards: ${v.r}, against ${v.chance} for rotated maps. That supports the rule, in a small group from a single clinic.`,
+      method: (spins: string) => `Agreement: Spearman rank correlation, across 68 regions, between the order in which the model reaches regions and the tau measured in them. Chance: the same score on ${spins} spatial rotations of the measured map (spin test).`,
+    },
     meg: {
-      eyebrow: 'A fifth check, on the chemistry',
+      eyebrow: 'A further check, on the chemistry',
       heading: 'Do the receptor maps predict real brain rhythms?',
       intro: 'The receptor maps come from PET scans. MEG records the brain’s electrical rhythms with a different machine, in different people. We asked whether the 19 receptor maps can predict how strong each rhythm is in regions the model never saw, always testing on the regions farthest from the ones it learned from.',
       bands: {
@@ -592,7 +617,7 @@ export const strings = {
     calibrated: 'The roughly 18 years between the first tau and the first symptoms is not something this model discovered. The time scale was deliberately tuned so the course would match published cohort studies. It is an input wearing the costume of a result. What the model genuinely contributes is the shape of the curves and the order of events, not the absolute ages.',
     dataEyebrow: 'Provenance',
     dataHeading: 'Where the data comes from',
-    dataIntro: 'These four sources are embedded in the dataset the app loads, with the licences below. They supply the wiring, the resting activity, 19 receptor maps, MEG band power and measured atrophy for 13 disorders. Nothing is scraped, invented or hand-drawn: even the 2D brain diagrams on the landing page are traced from the same cortical surface the 3D model uses.',
+    dataIntro: 'These sources are embedded in the dataset the app loads, with the licences below. They supply the wiring, the resting activity, 19 receptor maps, MEG band power, measured atrophy for 13 disorders, and tau measured in Alzheimer’s patients. Nothing is scraped, invented or hand-drawn: even the 2D brain diagrams on the landing page are traced from the same cortical surface the 3D model uses.',
     datasets: [
       {
         name: 'Structural connectome, resting-state FC and receptor maps',
@@ -614,6 +639,20 @@ export const strings = {
         citation: 'Fischl B et al. (1999). High-resolution intersubject averaging and a coordinate system for the cortical surface. Human Brain Mapping 8, 272-284.',
         licence: 'FreeSurfer software license',
         url: 'https://surfer.nmr.mgh.harvard.edu/',
+      },
+      {
+        name: 'Tau PET subtypes in Alzheimer\'s disease',
+        what: 'Where tau sits in the brains of living patients: group-average tau PET for the four spatial patterns of Alzheimer’s, from 1,612 people across six cohorts. Used only to score the model, never to tune it.',
+        citation: 'Vogel JW et al. (2021). Four distinct trajectories of tau deposition identified in Alzheimer\'s disease. Nature Medicine 27, 871-881.',
+        licence: 'CC0 (NeuroVault collection 12296)',
+        url: 'https://neurovault.org/collections/12296',
+      },
+      {
+        name: 'Tau PET and longitudinal atrophy in the same patients',
+        what: 'Average tau PET in 32 patients, and where their brains shrank over the following months. Used to check the rule that thinning follows tau.',
+        citation: 'La Joie R et al. (2020). Prospective longitudinal atrophy in Alzheimer\'s disease correlates with the intensity and topography of baseline tau-PET. Science Translational Medicine 12, eaau5732.',
+        licence: 'CC0 (NeuroVault collection 3829)',
+        url: 'https://neurovault.org/collections/3829',
       },
       {
         name: 'Whole-brain Hopf model',

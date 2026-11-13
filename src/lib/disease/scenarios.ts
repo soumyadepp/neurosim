@@ -6,6 +6,7 @@ export type ScenarioId = 'alzheimers' | 'ftd' | 'pca';
 /**
  * One kind of neurodegeneration: where the protein first appears, which regions carry the
  * function people notice losing first, and which spiking-brain task tests that function.
+ * tauPattern names the measured tau PET pattern the scenario is meant to follow, where one exists.
  */
 export interface DiseaseScenario {
   id: ScenarioId;
@@ -13,6 +14,7 @@ export interface DiseaseScenario {
   functionRegions: string[];
   taskId: TaskDef['id'];
   staged: boolean;
+  tauPattern: string | null;
 }
 
 export const SCENARIOS: DiseaseScenario[] = [
@@ -22,6 +24,7 @@ export const SCENARIOS: DiseaseScenario[] = [
     functionRegions: ['entorhinal', 'parahippocampal', 'isthmuscingulate', 'posteriorcingulate', 'precuneus', 'inferiorparietal', 'middletemporal', 'inferiortemporal'],
     taskId: 'recall',
     staged: true,
+    tauPattern: 'limbic',
   },
   {
     id: 'ftd',
@@ -29,6 +32,7 @@ export const SCENARIOS: DiseaseScenario[] = [
     functionRegions: ['insula', 'rostralanteriorcingulate', 'caudalanteriorcingulate', 'medialorbitofrontal', 'lateralorbitofrontal', 'frontalpole', 'temporalpole', 'parsopercularis', 'parstriangularis'],
     taskId: 'speak',
     staged: false,
+    tauPattern: null,
   },
   {
     id: 'pca',
@@ -36,6 +40,7 @@ export const SCENARIOS: DiseaseScenario[] = [
     functionRegions: ['lateraloccipital', 'cuneus', 'pericalcarine', 'lingual', 'superiorparietal', 'inferiorparietal', 'fusiform'],
     taskId: 'see',
     staged: false,
+    tauPattern: 'posterior',
   },
 ];
 

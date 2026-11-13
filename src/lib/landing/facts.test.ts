@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import atlas from '../../../public/data/brain.json';
+import spinFile from '../testing/spins.json';
 import type { BrainData } from '../data/brainData';
 import { diseaseSpec, DISEASE_COUPLING, NETWORK_TIMES, START_AGE } from '../disease/course';
 import { DEFAULT_MODEL, specFromHealth } from '../wholebrain/bridge';
@@ -7,11 +8,13 @@ import { BASELINE_CHEMISTRY } from '../sim/catalog';
 import { buildCourse, healthFromTau, meanWithin, RESERVE, type Course } from '../disease/progression';
 import { SCENARIOS, SPREAD_DEFAULTS, scenarioNodes } from '../disease/scenarios';
 import { simulateSpread, tauAt, type Treatment } from '../disease/spread';
-import { arrivalTimes, braakAgreement } from '../disease/staging';
+import { ARRIVAL_THRESHOLD, arrivalTimes, braakAgreement } from '../disease/staging';
+import { spinTest } from '../disease/pattern';
 import { epicenterFit } from '../disease/epicenter';
 import { evaluate } from '../wholebrain/experiment';
 import { strings } from '../strings';
 import { EVIDENCE_FACTS, SIM_FACTS } from './facts';
+import { gradeAgainstChance } from './verdict';
 
 const brain = atlas as unknown as BrainData;
 const ad = SCENARIOS[0];
@@ -72,7 +75,7 @@ describe('EVIDENCE_FACTS', () => {
 
   it('quotes the agreement between the spread model and Braak staging', () => {
     const spread = simulateSpread({ sc: brain.sc, seeds, params: SPREAD_DEFAULTS });
-    const staging = braakAgreement(brain.nodes.map(n => n.label), arrivalTimes(spread, 0.2));
+    const staging = braakAgreement(brain.nodes.map(n => n.label), arrivalTimes(spread, ARRIVAL_THRESHOLD));
     expect(staging.rho).toBeCloseTo(EVIDENCE_FACTS.braakRho, 2);
     expect(staging.regions).toBe(EVIDENCE_FACTS.regions);
   });
@@ -103,3 +106,57 @@ describe('the Parkinson\'s check', () => {
     expect(fit.r).toBeGreaterThan(fit.median * 3);
   });
 }, 300000);
+
+describe('the tau PET check', () => {
+  const T = EVIDENCE_FACTS.tau;
+  const spins = spinFile as number[][];
+  const cell = (map: string, scenario: string) => {
+    const m = T.maps.indexOf(map as never), s = T.scenarios.indexOf(scenario as never);
+    return { rho: T.rho[m][s], p: T.p[m][s] };
+  };
+
+  it('quotes the agreement and p-value the model produces for every condition and measured pattern', () => {
+    expect(brain.tau.maps).toEqual([...T.maps]);
+    expect(SCENARIOS.map(s => s.id)).toEqual([...T.scenarios]);
+    expect(spins.length).toBe(T.spins);
+    SCENARIOS.forEach((scenario, s) => {
+      const spread = simulateSpread({ sc: brain.sc, seeds: scenarioNodes(brain.nodes, scenario.seeds), params: SPREAD_DEFAULTS });
+      const arrival = arrivalTimes(spread, ARRIVAL_THRESHOLD);
+      T.maps.forEach((map, m) => {
+        const result = spinTest(arrival, brain.tau.values.map(row => row[m]), spins);
+        expect(result.rho, `${scenario.id} vs ${map}`).toBeCloseTo(T.rho[m][s], 2);
+        expect(result.p, `${scenario.id} vs ${map}`).toBeCloseTo(T.p[m][s], 3);
+      });
+    });
+  }, 60000);
+
+  it('supports what the page says about the visual variant: posterior, and no other subtype', () => {
+    expect(cell('posterior', 'pca').p).toBeLessThan(0.05);
+    for (const other of ['limbic', 'mtlSparing', 'leftTemporal']) expect(cell(other, 'pca').p).toBeGreaterThan(0.05);
+  });
+
+  it('supports what the page says about the control: no Alzheimer’s pattern is reproduced', () => {
+    for (const map of T.maps) expect(cell(map, 'ftd').p).toBeGreaterThan(0.05);
+  });
+
+  it('supports what the page says about typical Alzheimer’s: limbic matches, posterior matches more', () => {
+    expect(cell('limbic', 'alzheimers').p).toBeLessThan(0.05);
+    expect(cell('posterior', 'alzheimers').rho).toBeGreaterThan(cell('limbic', 'alzheimers').rho);
+  });
+
+  it('supports the warning that nothing survives correction for the whole table', () => {
+    const tests = T.maps.length * T.scenarios.length;
+    for (const row of T.p) for (const p of row) expect(gradeAgainstChance(p, tests)).not.toBe('solid');
+  });
+
+  it('points every scenario at a measured pattern that exists', () => {
+    for (const scenario of SCENARIOS) {
+      if (scenario.tauPattern !== null) expect(brain.tau.maps).toContain(scenario.tauPattern);
+    }
+  });
+
+  it('quotes the measured tau to atrophy agreement recorded in the dataset', () => {
+    const { patients: _patients, ...quoted } = EVIDENCE_FACTS.tauAtrophy;
+    expect(brain.validation.tauAtrophy).toEqual(quoted);
+  });
+});

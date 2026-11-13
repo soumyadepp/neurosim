@@ -14,7 +14,7 @@ pytestmark = pytest.mark.skipif(not (RAW / "hansen_receptors" / "sc_weighted.npy
 @pytest.fixture(scope="module")
 def out(tmp_path_factory) -> Path:
     target = tmp_path_factory.mktemp("data")
-    build(target, meg_spins=FAST_SPINS)
+    build(target, n_spins=FAST_SPINS, spins_out=target / "spins.json")
     return target
 
 
@@ -133,3 +133,35 @@ def test_receptor_meg_validation_reports_every_band_against_its_null(brain):
         assert len(result[key]) == len(result["bands"])
     assert all(0 < p <= 1 for p in result["p"])
     assert all(r > null for r, null in zip(result["r"], result["nullMean"]))
+
+
+def test_carries_measured_tau_for_every_region_and_map(brain):
+    tau = brain["tau"]
+    assert tau["maps"] == ["limbic", "mtlSparing", "posterior", "leftTemporal", "clinic"]
+    assert len(tau["values"]) == 68
+    assert all(len(row) == len(tau["maps"]) for row in tau["values"])
+
+
+def test_limbic_tau_peaks_in_the_entorhinal_cortex(brain):
+    limbic = [row[0] for row in brain["tau"]["values"]]
+    assert brain["nodes"][int(np.argmax(limbic))]["label"] == "entorhinal"
+
+
+def test_posterior_tau_peaks_outside_the_medial_temporal_lobe(brain):
+    posterior = [row[2] for row in brain["tau"]["values"]]
+    assert brain["nodes"][int(np.argmax(posterior))]["label"] not in ("entorhinal", "parahippocampal")
+
+
+def test_measured_tau_and_atrophy_agree_beyond_their_null(brain):
+    result = brain["validation"]["tauAtrophy"]
+    assert result["r"] > result["nullMean"]
+    assert result["spins"] == FAST_SPINS
+
+
+def test_writes_spins_as_within_hemisphere_permutations(out, brain):
+    spins = json.loads((out / "spins.json").read_text())
+    hemis = [node["hemi"] for node in brain["nodes"]]
+    assert len(spins) == FAST_SPINS
+    for spin in spins:
+        assert sorted(spin) == list(range(68))
+        assert all(hemis[i] == hemis[j] for i, j in enumerate(spin))
